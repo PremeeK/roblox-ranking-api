@@ -2,9 +2,9 @@
   "name": "roblox-ranking-api",
   "version": "1.0.0",
   "description": "API for Roblox Group Ranking using Open Cloud",
-  "main": "api/setRank.js",
+  "main": "api/index.js", // <-- Ujistěte se, že je to takto
   "scripts": {
-    "start": "node api/setRank.js"
+    "start": "node api/index.js" // <-- Pro konzistenci i zde
   },
   "dependencies": {
     "axios": "^1.6.8",
@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": "18.x" // <-- Volitelně můžete zkusit starší verzi Node.js (Vercel na 22.x může mít teething issues)
   }
 }
