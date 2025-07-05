@@ -54,11 +54,47 @@ module.exports = async (req, res) => {
         // Změna ranku
         await noblox.setRank(GROUP_ID, userId, desiredRankId);
 
-        console.log(`Úspěšně změněn rank pro UserID ${userId} na RankID ${desiredRankId}`);
+        // ... po await noblox.setRank(GROUP_ID, userId, desiredRankId);
+
+// Odeslání zprávy na Discord webhook
+if (DISCORD_WEBHOOK_URL) {
+    try {
+        const embed = {
+            title: "User Rank Changed",
+            description: `Player ${userId} (UserID: ${userId}) was ranked to rank: ${desiredRankId}.`,
+            color: 65280, // Zelená barva (RGB)
+            fields: [
+                { name: "UserID", value: userId.toString(), inline: true },
+                { name: "New Rank ID", value: desiredRankId.toString(), inline: true }
+            ],
+            timestamp: new Date().toISOString(),
+            footer: { text: "made by premeek" }
+        };
+
+        const webhookPayload = {
+            username: "aldertRanking",
+            avatar_url: "https://www.roblox.com/favicon.ico", // Volitelná ikona
+            embeds: [embed]
+        };
+
+        await axios.post(DISCORD_WEBHOOK_URL, webhookPayload, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        console.log('Discord webhook notification sent.');
+
+    } catch (discordError) {
+        console.error('Error while sending Discord notification: ', discordError.message);
+        // Je důležité, aby chyba webhooku nebránila úspěšné odpovědi Robloxu
+    }
+}
+
+        console.log(`Successfully changed users: ${userId} rank to: ${desiredRankId}`);
         return res.status(200).json({ success: true, message: 'Rank updated successfully.' });
 
     } catch (error) {
-        console.error(`Chyba při změně ranku pro UserID ${userId}:`, error.message);
+        console.error(`Error while changing user's: ${userId} rank:`, error.message);
         // noblox.js chyby mohou být různé (např. invalid cookie, rate limit, user not in group)
         if (error.message.includes("Invalid security cookie")) {
             return res.status(401).json({ success: false, message: "Authentication failed: Invalid Roblox cookie.", error: error.message });
