@@ -61,19 +61,18 @@ if (DISCORD_WEBHOOK_URL) {
     try {
         const embed = {
             title: "User Rank Changed",
-            description: `Player ${userId} (UserID: ${userId}) was ranked to rank: ${desiredRankId}.`,
+            description: `**Player** *${userId}* *(UserID: ${userId})* **was ranked to rank:** *${desiredRankId}*.`,
             color: 65280, // Zelená barva (RGB)
             fields: [
                 { name: "UserID", value: userId.toString(), inline: true },
                 { name: "New Rank ID", value: desiredRankId.toString(), inline: true }
             ],
             timestamp: new Date().toISOString(),
-            footer: { text: "made by premeek" }
+            footer: { text: "*made by premeek*" }
         };
 
         const webhookPayload = {
             username: "aldertRanking",
-            avatar_url: "https://www.roblox.com/favicon.ico", // Volitelná ikona
             embeds: [embed]
         };
 
