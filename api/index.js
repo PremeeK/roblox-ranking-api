@@ -1,25 +1,31 @@
-// api/index.js - PŘÍMÝ VERCEL HANDLER
-const axios = require('axios');
+// api/index.js (Vercel Serverless Function - Cookie Based)
+const noblox = require('noblox.js');
 
-// Konfigurace (načteno z Vercel Environment Variables)
-const ROBLOX_OPEN_CLOUD_API_KEY = process.env.ROBLOX_OPEN_CLOUD_API_KEY;
-const GROUP_ID = process.env.GROUP_ID;
+// --- KONFIGURACE (načteno z Vercel Environment Variables) ---
+const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE; // Vaše .ROBLOSECURITY cookie
+const GROUP_ID = parseInt(process.env.GROUP_ID); // ID vaší Roblox skupiny
 
-// Hlavní handler pro serverless funkci
+if (!ROBLOX_COOKIE) {
+    console.error("CHYBA: ROBLOX_COOKIE není nastaven v proměnných prostředí!");
+}
+if (isNaN(GROUP_ID)) {
+    console.error("CHYBA: GROUP_ID není nastaven nebo není platné číslo v proměnných prostředí!");
+}
+// -----------------------------------------------------------
+
 module.exports = async (req, res) => {
-    // Kontrola HTTP metody
+    // Zde kontrolujeme HTTP metodu
     if (req.method !== 'POST') {
         console.log(`Method Not Allowed: ${req.method}. Only POST requests are accepted.`);
         return res.status(405).json({ success: false, message: 'Method Not Allowed. Only POST requests are accepted.' });
     }
 
-    // Kontrola těla požadavku
+    // Vercel automaticky parsuje JSON, pokud je Content-Type application/json
     if (!req.body) {
         console.log('Missing request body.');
         return res.status(400).json({ success: false, message: 'Missing request body.' });
     }
 
-    // Získání dat z těla požadavku (Vercel automaticky parsuje JSON, pokud je Content-Type application/json)
     const { userId, desiredRankId } = req.body;
 
     // Validace vstupu
@@ -27,47 +33,38 @@ module.exports = async (req, res) => {
         console.log(`Invalid input: userId (${userId}) or desiredRankId (${desiredRankId}) must be numbers.`);
         return res.status(400).json({ success: false, message: 'Invalid input: userId and desiredRankId must be numbers.' });
     }
-    if (!ROBLOX_OPEN_CLOUD_API_KEY || !GROUP_ID) {
-        console.error('Server configuration error: API Key or Group ID missing.');
-        return res.status(500).json({ success: false, message: 'Server configuration error: API Key or Group ID missing.' });
+
+    if (!ROBLOX_COOKIE || isNaN(GROUP_ID)) {
+         console.error("Server configuration error: ROBLOX_COOKIE or GROUP_ID missing/invalid.");
+         return res.status(500).json({ success: false, message: 'Server configuration error.' });
     }
 
     console.log(`Received request to set rank for UserID: ${userId} to RoleID: ${desiredRankId} in GroupID: ${GROUP_ID}`);
 
     try {
-        const response = await axios.patch(
-            `https://groups.roblox.com/v1/groups/${GROUP_ID}/users/${userId}`,
-            { roleId: desiredRankId },
-            {
-                headers: {
-                    'x-api-key': ROBLOX_OPEN_CLOUD_API_KEY,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+        // DŮLEŽITÉ: Na Vercelu (stateless) musíme nastavit cookie PŘI KAŽDÉM VOLÁNÍ.
+        await noblox.setCookie(ROBLOX_COOKIE);
+        // Volitelně: Můžete si vypsat aktuálního uživatele pro kontrolu
+        // let currentUser = await noblox.getCurrentUser();
+        // console.log(`Přihlášen jako: ${currentUser.UserName}`);
 
-        if (response.status === 200) {
-            console.log(`Successfully updated rank for UserID: ${userId}. Roblox API Response Data:`, response.data);
-            return res.status(200).json({ success: true, message: 'Rank updated successfully', data: response.data });
-        } else {
-            console.warn(`Roblox API returned status ${response.status} for UserID: ${userId}. Response data:`, response.data);
-            return res.status(response.status).json({ success: false, message: 'Failed to update rank', error: response.data });
-        }
+        // Změna ranku
+        await noblox.setRank(GROUP_ID, userId, desiredRankId);
+
+        console.log(`Úspěšně změněn rank pro UserID ${userId} na RankID ${desiredRankId}`);
+        return res.status(200).json({ success: true, message: 'Rank updated successfully.' });
 
     } catch (error) {
-        console.error('Error updating rank (catch block):', error.message);
-        if (error.response) {
-            // Chyba z Axiosu (HTTP chyba z Roblox API)
-            console.error('Roblox API Error Response Data:', error.response.data);
-            return res.status(error.response.status || 500).json({ success: false, message: 'Roblox API error', error: error.response.data });
-        } else if (error.request) {
-            // Požadavek byl odeslán, ale nepřišla žádná odpověď (např. síťová chyba)
-            console.error('No response received from Roblox API:', error.message);
-            return res.status(500).json({ success: false, message: 'No response from Roblox API.', error: error.message });
+        console.error(`Chyba při změně ranku pro UserID ${userId}:`, error.message);
+        // noblox.js chyby mohou být různé (např. invalid cookie, rate limit, user not in group)
+        if (error.message.includes("Invalid security cookie")) {
+            return res.status(401).json({ success: false, message: "Authentication failed: Invalid Roblox cookie.", error: error.message });
+        } else if (error.message.includes("Roblox responded with status code 403")) {
+            return res.status(403).json({ success: false, message: "Roblox API Forbidden: Check group permissions or user status.", error: error.message });
+        } else if (error.message.includes("Rate Limit")) {
+            return res.status(429).json({ success: false, message: "Roblox API Rate Limited. Try again later.", error: error.message });
         } else {
-            // Něco jiného se pokazilo před odesláním požadavku
-            console.error('Server-side error before request:', error.message);
-            return res.status(500).json({ success: false, message: 'Server-side error', error: error.message });
+            return res.status(500).json({ success: false, message: `Server-side error during ranking: ${error.message}`, error: error.message });
         }
     }
 };
