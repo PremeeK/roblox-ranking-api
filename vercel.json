@@ -1,9 +1,8 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/setRank",
-      "dest": "/api/index.js",
-      "methods": ["POST"]
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     }
   ]
 }
