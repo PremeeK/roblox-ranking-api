@@ -1,9 +1,12 @@
-// api/index.js (Vercel Serverless Function - Cookie Based)
+// api/index.js
 const noblox = require('noblox.js');
+const axios = require('axios'); // <-- PŘIDEJTE TENTO ŘÁDEK
 
 // --- KONFIGURACE (načteno z Vercel Environment Variables) ---
-const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE; // Vaše .ROBLOSECURITY cookie
-const GROUP_ID = parseInt(process.env.GROUP_ID); // ID vaší Roblox skupiny
+const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE;
+const GROUP_ID = parseInt(process.env.GROUP_ID);
+const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL; // <-- PŘIDEJTE TENTO ŘÁDEK
+// -----------------------------------------------------------
 
 if (!ROBLOX_COOKIE) {
     console.error("CHYBA: ROBLOX_COOKIE není nastaven v proměnných prostředí!");
