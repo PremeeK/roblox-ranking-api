@@ -1,13 +1,15 @@
 {
-  "name": "roblox-ranking-api",
+  "name": "roblox-ranking-api-cookie",
   "version": "1.0.0",
-  "description": "API for Roblox Group Ranking using Open Cloud",
+  "description": "Roblox Group Ranking using noblox.js on Vercel",
   "main": "api/index.js",
   "scripts": {
     "start": "node api/index.js"
   },
   "dependencies": {
-    "axios": "^1.6.8",
-    "express": "^4.19.2"
+    "noblox.js": "^4.14.0"
+  },
+  "engines": {
+    "node": "18.x" // Použijte starší, stabilnější verzi Node.js
   }
 }
